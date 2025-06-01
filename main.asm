@@ -42,26 +42,26 @@ _connection:
 	jmp _fd_stdin
 
 _fd_stdin:
-        mov     rax, 33
+        mov     rax, 33	; syscall dup2 
         pop     rdi
         push    rdi
-        mov     rsi, 0
+        mov     rsi, 0	; in <-
         syscall
         jmp     _fd_stdout
 
 _fd_stdout:
-        mov     rax, 33
+        mov     rax, 33	; syscall dup2
         pop     rdi
         push    rdi
-        mov     rsi, 1
+        mov     rsi, 1	; out ->
         syscall
         jmp _fd_stderr
 
 _fd_stderr:
-        mov     rax, 33
+        mov     rax, 33	; syscall dup2
         pop     rdi
         push    rdi
-        mov     rsi, 2
+        mov     rsi, 2	; error X
         syscall
         jmp     _execution
 
