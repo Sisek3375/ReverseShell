@@ -30,8 +30,8 @@ segment .text
 
 _start:
 	mov rax, 41	; syscall for socket
-	mov rdi, 2	; AF_INET (IPv4)
-	mov rsi, 1	; connexion (TCP)
+	mov rdi, 2	; Domain (IPv4)
+	mov rsi, 1	; type (TCP)
 	mov rdx, 6	; protocol (TCP)
 	syscall
 
