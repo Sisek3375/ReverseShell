@@ -1,5 +1,5 @@
 # REVERSE SHELL ASM 
-![Graphical Interface for Password Generator](./bind-shell-img.png)
+![Graphical Interface for Password Generator](./reverse-shell.png)
 
 ## Description
 This project implements a lightweight reverse shell written entirely in x86_64 assembly.
